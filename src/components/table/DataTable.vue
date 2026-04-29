@@ -222,6 +222,7 @@ import {
   type ColumnDef,
   type SortingState,
 } from '@tanstack/vue-table'
+import { RouterLink } from 'vue-router'
 import { useTaskStore } from '@/stores/taskStore'
 import type { Task, TaskStatus, TaskPriority } from '@/types'
 import BadgeLabel from '@/components/ui/BadgeLabel.vue'
@@ -304,8 +305,7 @@ async function saveEdit() {
     assignedTo: editForm.assignedTo.trim(),
     status: editForm.status,
     priority: editForm.priority,
-    startDate: editForm.startDate ? inputToApi(editForm.startDate) : null,
-    endDate: editForm.endDate ? inputToApi(editForm.endDate) : null,
+    dueDate: editForm.endDate ? inputToApi(editForm.endDate) : (editForm.startDate ? inputToApi(editForm.startDate) : null),
   })
   saving.value = false
   closeEdit()
@@ -330,8 +330,17 @@ const columns: ColumnDef<Task>[] = [
     accessorKey: 'title',
     header: 'Title',
     enableSorting: true,
-    cell: (info) =>
-      h('span', { class: 'font-medium text-slate-800 text-xs leading-relaxed block max-w-[220px] truncate' }, info.getValue() as string),
+    cell: (info) => {
+      const task = info.row.original
+      return h(
+        RouterLink,
+        {
+          to: `/projects/${task.project}/tasks/${task._id}`,
+          class: 'font-medium text-slate-800 text-xs leading-relaxed block max-w-[220px] truncate hover:text-blue-600 hover:underline transition-colors',
+        },
+        () => info.getValue() as string,
+      )
+    },
   },
   {
     accessorKey: 'assignedTo',

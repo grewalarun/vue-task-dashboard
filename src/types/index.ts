@@ -40,8 +40,8 @@ export interface Task {
 
 export interface Comment {
   _id: string
-  content: string
-  author: {
+  text: string
+  createdBy: {
     _id: string
     name: string
     email: string
@@ -54,8 +54,8 @@ export interface CreateTaskPayload {
   assignedTo: string
   status: TaskStatus
   priority: TaskPriority
-  startDate: string | null
-  endDate: string | null
+  dueDate?: string | null
+  description?: string
 }
 
 export interface ApiResponse<T> {

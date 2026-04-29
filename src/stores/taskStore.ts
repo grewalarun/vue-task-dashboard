@@ -1,17 +1,23 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { taskService } from '@/services/taskService'
-import type { Task, CreateTaskPayload } from '@/types'
+import type { Task, Comment, CreateTaskPayload, TaskStatus } from '@/types'
 
 export const useTaskStore = defineStore('tasks', () => {
   // ─── State ────────────────────────────────────────────────────────────────
   const tasks = ref<Task[]>([])
   const userTasks = ref<Task[]>([])
-  const tasksLoading = ref(false)      // for project-scoped fetchTasks
-  const userTasksLoading = ref(false)  // for fetchUserTasks
+  const activeTask = ref<Task | null>(null)
+  const comments = ref<Comment[]>([])
+
+  const tasksLoading = ref(false)      // project list fetch
+  const userTasksLoading = ref(false)  // /tasks/me fetch
+  const taskLoading = ref(false)       // single task fetch
+  const commentLoading = ref(false)    // comments fetch
+
   const error = ref<string | null>(null)
 
-  // Combined loading — true if either fetch is in flight
+  // Combined loading — true if any fetch is in flight
   const loading = computed(() => tasksLoading.value || userTasksLoading.value)
 
   // ─── Getters ──────────────────────────────────────────────────────────────
@@ -40,18 +46,11 @@ export const useTaskStore = defineStore('tasks', () => {
     try {
       const res = await taskService.getProjectTasks(projectId)
       const raw = res.data as any
-      if (Array.isArray(raw)) {
-        tasks.value = raw
-      } else if (Array.isArray(raw?.data)) {
-        tasks.value = raw.data
-      } else if (Array.isArray(raw?.tasks)) {
-        tasks.value = raw.tasks
-      } else if (Array.isArray(raw?.data?.tasks)) {
-        tasks.value = raw.data.tasks
-      } else {
-        console.warn('[TaskStore] Unexpected API shape for fetchTasks:', raw)
-        tasks.value = []
-      }
+      if (Array.isArray(raw)) tasks.value = raw
+      else if (Array.isArray(raw?.data)) tasks.value = raw.data
+      else if (Array.isArray(raw?.tasks)) tasks.value = raw.tasks
+      else if (Array.isArray(raw?.data?.tasks)) tasks.value = raw.data.tasks
+      else { console.warn('[TaskStore] fetchTasks unexpected shape:', raw); tasks.value = [] }
     } catch (err: any) {
       error.value = err.message
     } finally {
@@ -66,21 +65,66 @@ export const useTaskStore = defineStore('tasks', () => {
     try {
       const res = await taskService.getUserTasks()
       const raw = res.data as any
-      if (Array.isArray(raw)) {
-        userTasks.value = raw
-      } else if (Array.isArray(raw?.data)) {
-        userTasks.value = raw.data
-      } else if (Array.isArray(raw?.tasks)) {
-        userTasks.value = raw.tasks
-      } else {
-        console.warn('[TaskStore] Unexpected API shape for fetchUserTasks:', raw)
-        userTasks.value = []
-      }
+      if (Array.isArray(raw)) userTasks.value = raw
+      else if (Array.isArray(raw?.data)) userTasks.value = raw.data
+      else if (Array.isArray(raw?.tasks)) userTasks.value = raw.tasks
+      else { console.warn('[TaskStore] fetchUserTasks unexpected shape:', raw); userTasks.value = [] }
     } catch (err: any) {
       error.value = err.message
     } finally {
       userTasksLoading.value = false
     }
+  }
+
+  /** GET /projects/:projectId/tasks/:taskId */
+  async function fetchTask(projectId: string, taskId: string) {
+    taskLoading.value = true
+    error.value = null
+    try {
+      const res = await taskService.getById(projectId, taskId)
+      const raw = res.data as any
+      activeTask.value = raw?.task ?? raw?.data ?? raw
+    } catch (err: any) {
+      error.value = err.message
+    } finally {
+      taskLoading.value = false
+    }
+  }
+
+  /** GET /projects/:projectId/tasks/:taskId/comments */
+  async function fetchComments(projectId: string, taskId: string) {
+    commentLoading.value = true
+    try {
+      const res = await taskService.getComments(projectId, taskId)
+      const raw = res.data as any
+      if (Array.isArray(raw)) comments.value = raw
+      else if (Array.isArray(raw?.data)) comments.value = raw.data
+      else if (Array.isArray(raw?.comments)) comments.value = raw.comments
+      else comments.value = []
+    } catch (err: any) {
+      error.value = err.message
+    } finally {
+      commentLoading.value = false
+    }
+  }
+
+  /** POST /projects/:projectId/tasks/:taskId/comments */
+  async function addComment(projectId: string, taskId: string, text: string) {
+    try {
+      const res = await taskService.addComment(projectId, taskId, text)
+      const raw = res.data as any
+      const comment = raw?.comment ?? raw?.data ?? raw
+      comments.value.push(comment)
+    } catch (err: any) {
+      error.value = err.message
+    }
+  }
+
+  /** Clear single-task detail state */
+  function clearTask() {
+    activeTask.value = null
+    comments.value = []
+    error.value = null
   }
 
   async function addTask(projectId: string, payload: CreateTaskPayload): Promise<Task | null> {
@@ -105,6 +149,7 @@ export const useTaskStore = defineStore('tasks', () => {
     try {
       await taskService.delete(projectId, taskId)
       tasks.value = tasks.value.filter((t) => t._id !== taskId)
+      if (activeTask.value?._id === taskId) activeTask.value = null
       return true
     } catch (err: any) {
       error.value = err.message
@@ -124,6 +169,7 @@ export const useTaskStore = defineStore('tasks', () => {
       const updated = raw?.task ?? raw?.data ?? raw
       const idx = tasks.value.findIndex((t) => t._id === taskId)
       if (idx !== -1) tasks.value[idx] = { ...tasks.value[idx], ...updated }
+      if (activeTask.value?._id === taskId) activeTask.value = { ...activeTask.value, ...updated }
       return true
     } catch (err: any) {
       error.value = err.message
@@ -132,14 +178,15 @@ export const useTaskStore = defineStore('tasks', () => {
   }
 
   /** PATCH /:taskId/status */
-  async function updateTaskStatus(taskId: string, status: Task['status']): Promise<boolean> {
+  async function updateTaskStatus(projectId: string, taskId: string, payload: { status: TaskStatus }): Promise<boolean> {
     error.value = null
     try {
-      const res = await taskService.updateStatus(taskId, status)
+      const res = await taskService.updateStatus(taskId, payload.status)
       const raw = res.data as any
       const updated = raw?.task ?? raw?.data ?? raw
       const idx = tasks.value.findIndex((t) => t._id === taskId)
       if (idx !== -1) tasks.value[idx] = { ...tasks.value[idx], ...updated }
+      if (activeTask.value?._id === taskId) activeTask.value = { ...activeTask.value!, status: payload.status }
       return true
     } catch (err: any) {
       error.value = err.message
@@ -154,9 +201,13 @@ export const useTaskStore = defineStore('tasks', () => {
   return {
     tasks,
     userTasks,
+    activeTask,
+    comments,
     loading,
     tasksLoading,
     userTasksLoading,
+    taskLoading,
+    commentLoading,
     error,
     tasksByPriority,
     tasksByStatus,
@@ -165,6 +216,10 @@ export const useTaskStore = defineStore('tasks', () => {
     inProgressTasks,
     fetchTasks,
     fetchUserTasks,
+    fetchTask,
+    fetchComments,
+    addComment,
+    clearTask,
     addTask,
     deleteTask,
     updateTask,

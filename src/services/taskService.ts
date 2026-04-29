@@ -58,8 +58,8 @@ export const taskService = {
 
   // ── Comments ─────────────────────────────────────────────────────────────
   /** POST /projects/:projectId/tasks/:taskId/comments */
-  addComment: (projectId: string, taskId: string, content: string) =>
-    api.post<Comment>(`/projects/${projectId}/tasks/${taskId}/comments`, { content }),
+  addComment: (projectId: string, taskId: string, text: string) =>
+    api.post<Comment>(`/projects/${projectId}/tasks/${taskId}/comments`, { text }),
 
   /** GET /projects/:projectId/tasks/:taskId/comments */
   getComments: (projectId: string, taskId: string) =>

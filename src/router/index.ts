@@ -5,6 +5,7 @@ import DashboardPage from '@/pages/DashboardPage.vue'
 import AddTaskPage from '@/pages/AddTaskPage.vue'
 import TasksTablePage from '@/pages/TasksTablePage.vue'
 import ProjectDashboard from '@/pages/ProjectDashboard.vue'
+import TaskDetailPage from '@/pages/TaskDetailPage.vue'
 
 const routes = [
   {
@@ -24,6 +25,12 @@ const routes = [
     name: 'dashboard',
     component: DashboardPage,
     meta: { title: 'Dashboard', requiresAuth: true },
+  },
+  {
+    path: '/projects/:projectId/tasks/:taskId',
+    name: 'task-detail',
+    component: TaskDetailPage,
+    meta: { title: 'Task Detail', requiresAuth: true },
   },
   {
     path: '/tasks',

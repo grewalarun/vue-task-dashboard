@@ -47,6 +47,24 @@
 
       <!-- Form Body -->
       <div class="px-8 py-7 space-y-5">
+        <!-- Project -->
+        <div class="space-y-1.5">
+          <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wide">
+            Project <span class="text-rose-400">*</span>
+          </label>
+          <select
+            v-model="form.projectId"
+            class="w-full px-3.5 py-2.5 text-sm border rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all"
+            :class="errors.projectId ? 'border-rose-300 bg-rose-50' : 'border-slate-200'"
+          >
+            <option value="" disabled>Select a project…</option>
+            <option v-for="p in projectStore.projects" :key="(p as any)._id" :value="(p as any)._id">
+              {{ (p as any).name }}
+            </option>
+          </select>
+          <p v-if="errors.projectId" class="text-xs text-rose-500">{{ errors.projectId }}</p>
+        </div>
+
         <!-- Title -->
         <div class="space-y-1.5">
           <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wide">
@@ -61,6 +79,7 @@
           />
           <p v-if="errors.title" class="text-xs text-rose-500">{{ errors.title }}</p>
         </div>
+
 
         <!-- Assigned To -->
         <div class="space-y-1.5">
@@ -165,18 +184,25 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { reactive, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useTaskStore } from '@/stores/taskStore'
+import { useProjectStore } from '@/stores/projectStore'
 import BadgeLabel from '@/components/ui/BadgeLabel.vue'
 import type { TaskStatus, TaskPriority } from '@/types'
 
 const router = useRouter()
 const taskStore = useTaskStore()
+const projectStore = useProjectStore()
+
+onMounted(() => {
+  if (!projectStore.projects?.length) projectStore.fetchProjects()
+})
 
 const successMsg = ref('')
 
 interface FormState {
+  projectId: string
   title: string
   assignedTo: string
   status: TaskStatus
@@ -186,6 +212,7 @@ interface FormState {
 }
 
 const form = reactive<FormState>({
+  projectId: '',
   title: '',
   assignedTo: '',
   status: 'todo',
@@ -198,6 +225,8 @@ const errors = reactive<Partial<Record<keyof FormState, string>>>({})
 
 function validate(): boolean {
   Object.keys(errors).forEach((k) => delete (errors as any)[k])
+
+  if (!form.projectId) errors.projectId = 'Please select a project'
 
   if (!form.title.trim()) errors.title = 'Title is required'
   else if (form.title.trim().length < 3) errors.title = 'Title must be at least 3 characters'
@@ -223,13 +252,12 @@ async function submitForm() {
 
   if (!validate()) return
 
-  const result = await taskStore.addTask({
+  const result = await taskStore.addTask(form.projectId, {
     title: form.title.trim(),
     assignedTo: form.assignedTo.trim(),
     status: form.status,
     priority: form.priority,
-    startDate: formatDateForApi(form.startDate),
-    endDate: form.endDate ? formatDateForApi(form.endDate) : null,
+    dueDate: form.endDate ? formatDateForApi(form.endDate) : (form.startDate ? formatDateForApi(form.startDate) : null),
   })
 
   if (result) {
@@ -242,6 +270,7 @@ async function submitForm() {
 }
 
 function resetForm() {
+  form.projectId = ''
   form.title = ''
   form.assignedTo = ''
   form.status = 'todo'
