@@ -169,19 +169,22 @@
           <div class="bg-white rounded-xl border border-slate-200 p-5">
             <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Status</h3>
             <select
-              :value="task.status"
+              :value="task?.status"
               class="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 transition-all"
               :disabled="updatingStatus"
               @change="handleStatusChange(($event.target as HTMLSelectElement).value as TaskStatus)"
             >
-              <option value="open">Open</option>
+              <option value="todo">Todo</option>
               <option value="in-progress">In Progress</option>
-              <option value="under-review">Under Review</option>
               <option value="done">Done</option>
             </select>
             <div v-if="updatingStatus" class="flex items-center gap-1.5 mt-2 text-xs text-slate-400">
               <svg class="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
               Updating…
+            </div>
+            <div v-if="statusError" class="flex items-center gap-1.5 mt-2 text-xs text-rose-500">
+              <svg class="w-3 h-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/></svg>
+              {{ statusError }}
             </div>
           </div>
 
@@ -190,11 +193,11 @@
             <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Assigned To</h3>
             <div class="flex items-center gap-3">
               <div class="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-sm font-bold text-slate-600 flex-shrink-0">
-                {{ getInitials(task.assignedTo?.name ?? '') }}
+                {{ getInitials(resolvedAssignedTo?.name ?? '') }}
               </div>
               <div class="min-w-0">
                 <p class="text-sm font-semibold text-slate-800 truncate">{{ assigneeName }}</p>
-                <p class="text-xs text-slate-400 truncate font-mono" :title="task.assignedTo?.email">{{ task.assignedTo?.email }}</p>
+                <p class="text-xs text-slate-400 truncate font-mono" :title="resolvedAssignedTo?.email">{{ resolvedAssignedTo?.email }}</p>
               </div>
             </div>
           </div>
@@ -204,11 +207,11 @@
             <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Created By</h3>
             <div class="flex items-center gap-3">
               <div class="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-sm font-bold text-slate-600 flex-shrink-0">
-                {{ getInitials(task.createdBy?.name ?? '') }}
+                {{ getInitials(resolvedCreatedBy?.name ?? '') }}
               </div>
               <div class="min-w-0">
-                <p class="text-sm font-semibold text-slate-800 truncate">{{ task.createdBy?.name }}</p>
-                <p v-if="task.createdBy?.email" class="text-xs text-slate-400 truncate font-mono">{{ task.createdBy.email }}</p>
+                <p class="text-sm font-semibold text-slate-800 truncate">{{ resolvedCreatedBy?.name }}</p>
+                <p v-if="resolvedCreatedBy?.email" class="text-xs text-slate-400 truncate font-mono">{{ resolvedCreatedBy.email }}</p>
               </div>
             </div>
           </div>
@@ -241,78 +244,7 @@
     </div>
 
     <!-- ── Edit Modal ──────────────────────────────────────────────────────── -->
-    <Teleport to="body">
-      <Transition name="fade">
-        <div
-          v-if="showEditModal"
-          class="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4"
-          @click.self="showEditModal = false"
-        >
-          <div class="bg-white rounded-2xl shadow-2xl border border-slate-100 w-full max-w-lg max-h-[90vh] overflow-y-auto">
-            <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 sticky top-0 bg-white z-10">
-              <h3 class="text-sm font-semibold text-slate-900">Edit Task</h3>
-              <button class="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-400 transition-colors" @click="showEditModal = false">
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-              </button>
-            </div>
-            <div class="px-6 py-5 space-y-4">
-              <div class="space-y-1.5">
-                <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wide">Title</label>
-                <input v-model="editForm.title" type="text" class="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all" />
-              </div>
-              <div class="space-y-1.5">
-                <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wide">Description</label>
-                <textarea v-model="editForm.description" rows="4" class="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all resize-none"></textarea>
-              </div>
-              <div class="space-y-1.5">
-                <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wide">Assigned To</label>
-                <input v-model="editForm.assignedTo" type="email" class="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all" />
-              </div>
-              <div class="grid grid-cols-2 gap-4">
-                <div class="space-y-1.5">
-                  <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wide">Status</label>
-                  <select v-model="editForm.status" class="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all">
-                    <option value="open">Open</option>
-                    <option value="in-progress">In Progress</option>
-                    <option value="under-review">Under Review</option>
-                    <option value="done">Done</option>
-                  </select>
-                </div>
-                <div class="space-y-1.5">
-                  <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wide">Priority</label>
-                  <select v-model="editForm.priority" class="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all">
-                    <option value="low">Low</option>
-                    <option value="medium">Medium</option>
-                    <option value="high">High</option>
-                  </select>
-                </div>
-              </div>
-              <div class="grid grid-cols-2 gap-4">
-                <div class="space-y-1.5">
-                  <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wide">Start Date</label>
-                  <input v-model="editForm.startDate" type="date" class="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all" />
-                </div>
-                <div class="space-y-1.5">
-                  <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wide">End Date</label>
-                  <input v-model="editForm.endDate" type="date" class="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all" />
-                </div>
-              </div>
-            </div>
-            <div class="px-6 py-4 border-t border-slate-100 bg-slate-50/50 rounded-b-2xl flex justify-end gap-3">
-              <button class="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors" @click="showEditModal = false">Cancel</button>
-              <button
-                class="flex items-center gap-2 px-5 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50"
-                :disabled="saving"
-                @click="saveEdit"
-              >
-                <svg v-if="saving" class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
-                {{ saving ? 'Saving…' : 'Save Changes' }}
-              </button>
-            </div>
-          </div>
-        </div>
-      </Transition>
-    </Teleport>
+    <TaskEditModal v-if="showEditModal" :task="task" @close="showEditModal = false" />
 
     <!-- ── Delete Confirm Modal ───────────────────────────────────────────── -->
     <Teleport to="body">
@@ -361,13 +293,18 @@ import { ref, computed, reactive, onMounted, onUnmounted } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useTaskStore } from '@/stores/taskStore'
 import { useAuthStore } from '@/stores/authStore'
+import { useUserStore } from '@/stores/userStore'
+import { useProjectStore } from '@/stores/projectStore'
 import BadgeLabel from '@/components/ui/BadgeLabel.vue'
-import type { TaskStatus, TaskPriority } from '@/types'
+import TaskEditModal from '@/components/TaskEditModal.vue'
+import type { TaskStatus, TaskPriority, User } from '@/types'
 
 const route     = useRoute()
 const router    = useRouter()
 const taskStore = useTaskStore()
 const authStore = useAuthStore()
+const userStore = useUserStore()
+const projectStore = useProjectStore()
 
 const projectId = route.params.projectId as string
 const taskId    = route.params.taskId as string
@@ -376,25 +313,30 @@ const taskId    = route.params.taskId as string
 const newComment       = reactive({text:''})
 const submittingComment = ref(false)
 const updatingStatus   = ref(false)
+const statusError      = ref('')
 const showEditModal    = ref(false)
 const showDeleteConfirm = ref(false)
-const saving  = ref(false)
 const deleting = ref(false)
-
-const editForm = reactive({
-  title: '',
-  description: '',
-  assignedTo: '',
-  status: 'open' as TaskStatus,
-  priority: 'medium' as TaskPriority,
-  startDate: '',
-  endDate: '',
-})
 
 // ── Computed ──────────────────────────────────────────────────────────────────
 const task = computed(() => taskStore.activeTask)
+const projectMembers = computed(() => projectStore.projects.find(p => p._id === projectId)?.members || [])
 
-const assigneeName = computed(() => task.value?.assignedTo?.name ?? '—')
+const resolvedAssignedTo = computed(() => {
+  const id = task.value?.assignedTo as any
+  if (!id) return null
+  if (typeof id === 'string') return userStore.users.find(u => u.id === id) || { name: 'Unknown User', email: '' }
+  return id
+})
+
+const resolvedCreatedBy = computed(() => {
+  const id = task.value?.createdBy as any
+  if (!id) return null
+  if (typeof id === 'string') return userStore.users.find(u => u.id === id) || { name: 'Unknown User', email: '' }
+  return id
+})
+
+const assigneeName = computed(() => resolvedAssignedTo.value?.name ?? '—')
 
 const authInitials = computed(() => {
   const name = authStore.user?.name ?? ''
@@ -406,19 +348,6 @@ function getInitials(val: string): string {
   if (!val) return 'U'
   if (val.includes('@')) return val[0].toUpperCase()
   return val.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase()
-}
-
-function apiToInput(raw: string | null): string {
-  if (!raw) return ''
-  if (raw.length === 8) return `${raw.slice(4)}-${raw.slice(2, 4)}-${raw.slice(0, 2)}`
-  // ISO date
-  return raw.split('T')[0]
-}
-
-function inputToApi(s: string): string {
-  if (!s) return ''
-  const [y, m, d] = s.split('-')
-  return `${d}${m}${y}`
 }
 
 function formatDisplayDate(raw: string | null): string {
@@ -444,8 +373,13 @@ function formatCommentDate(raw: string): string {
 // ── Actions ───────────────────────────────────────────────────────────────────
 async function handleStatusChange(status: TaskStatus) {
   updatingStatus.value = true
-  await taskStore.updateTaskStatus(projectId, taskId, { status })
+  statusError.value = ''
+  const ok = await taskStore.updateTaskStatus(projectId, taskId, { status })
   updatingStatus.value = false
+  if (!ok) {
+    statusError.value = taskStore.error ?? 'Failed to update status. Please try again.'
+    setTimeout(() => { statusError.value = '' }, 4000)
+  }
 }
 
 async function submitComment() {
@@ -459,28 +393,7 @@ async function submitComment() {
 
 function openEditModal() {
   if (!task.value) return
-  editForm.title       = task.value.title
-  editForm.description = (task.value as any).description ?? ''
-  editForm.assignedTo  = task.value.assignedTo?.email ?? ''
-  editForm.status      = task.value.status
-  editForm.priority    = task.value.priority
-  editForm.startDate   = apiToInput(task.value.dueDate ?? null)
-  editForm.endDate     = ''
-  showEditModal.value  = true
-}
-
-async function saveEdit() {
-  if (!task.value) return
-  saving.value = true
-  await taskStore.updateTask(projectId, taskId, {
-    title:      editForm.title.trim(),
-    assignedTo: editForm.assignedTo.trim(),
-    status:     editForm.status,
-    priority:   editForm.priority,
-    dueDate:    editForm.startDate ? inputToApi(editForm.startDate) : null,
-  })
-  saving.value = false
-  showEditModal.value = false
+  showEditModal.value = true
 }
 
 async function confirmDelete() {
@@ -492,12 +405,16 @@ async function confirmDelete() {
 }
 
 // ── Lifecycle ─────────────────────────────────────────────────────────────────
-onMounted(async () => {
-  await taskStore.fetchTask(projectId, taskId)
-  await taskStore.fetchComments(projectId, taskId)
+onMounted(() => {
+  if (!projectStore.projects.length) projectStore.fetchProjects()
+  taskStore.fetchTask(projectId, taskId)
+  taskStore.fetchComments(projectId, taskId)
+  userStore.fetchUsers()
 })
 
 onUnmounted(() => {
   taskStore.clearTask()
 })
+
+console.log(task.value?.status)
 </script>

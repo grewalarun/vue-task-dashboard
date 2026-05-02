@@ -86,13 +86,16 @@
           <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wide">
             Assigned To <span class="text-rose-400">*</span>
           </label>
-          <input
+          <select
             v-model="form.assignedTo"
-            type="email"
-            placeholder="user@example.com"
-            class="w-full px-3.5 py-2.5 text-sm border rounded-lg bg-white text-slate-800 placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all"
+            class="w-full px-3.5 py-2.5 text-sm border rounded-lg bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all"
             :class="errors.assignedTo ? 'border-rose-300 bg-rose-50' : 'border-slate-200'"
-          />
+          >
+            <option value="" disabled>Select a user</option>
+            <option v-for="user in projectMembers" :key="user._id" :value="user._id">
+              {{ user.name }} ({{ user.email }})
+            </option>
+          </select>
           <p v-if="errors.assignedTo" class="text-xs text-rose-500">{{ errors.assignedTo }}</p>
         </div>
 
@@ -184,19 +187,22 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, onMounted } from 'vue'
+import { reactive, ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useTaskStore } from '@/stores/taskStore'
 import { useProjectStore } from '@/stores/projectStore'
+import { useUserStore } from '@/stores/userStore'
 import BadgeLabel from '@/components/ui/BadgeLabel.vue'
 import type { TaskStatus, TaskPriority } from '@/types'
 
 const router = useRouter()
 const taskStore = useTaskStore()
 const projectStore = useProjectStore()
+const userStore = useUserStore()
 
 onMounted(() => {
   if (!projectStore.projects?.length) projectStore.fetchProjects()
+  userStore.fetchUsers()
 })
 
 const successMsg = ref('')
@@ -223,6 +229,12 @@ const form = reactive<FormState>({
 
 const errors = reactive<Partial<Record<keyof FormState, string>>>({})
 
+const projectMembers = computed(() => {
+  if (!form.projectId) return []
+  const proj = projectStore.projects.find(p => p._id === form.projectId)
+  return proj?.members || []
+})
+
 function validate(): boolean {
   Object.keys(errors).forEach((k) => delete (errors as any)[k])
 
@@ -231,8 +243,7 @@ function validate(): boolean {
   if (!form.title.trim()) errors.title = 'Title is required'
   else if (form.title.trim().length < 3) errors.title = 'Title must be at least 3 characters'
 
-  if (!form.assignedTo.trim()) errors.assignedTo = 'Assignee email is required'
-  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.assignedTo)) errors.assignedTo = 'Enter a valid email address'
+  if (!form.assignedTo.trim()) errors.assignedTo = 'Assignee is required'
 
   if (!form.startDate) errors.startDate = 'Start date is required'
 

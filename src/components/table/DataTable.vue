@@ -89,81 +89,11 @@
   </div>
 
   <!-- Edit Modal -->
-  <Teleport to="body">
-    <Transition name="fade">
-      <div
-        v-if="editingTask"
-        class="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm px-4"
-        @click.self="closeEdit"
-      >
-        <div class="bg-white rounded-2xl shadow-2xl border border-slate-100 w-full max-w-lg">
-          <div class="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-            <div>
-              <h3 class="text-sm font-semibold text-slate-900">Edit Task</h3>
-              <p class="text-xs text-slate-400 mt-0.5 font-mono truncate max-w-xs">{{ editingTask._id }}</p>
-            </div>
-            <button class="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors" @click="closeEdit">
-              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-            </button>
-          </div>
-          <div class="px-6 py-5 space-y-4">
-            <div class="space-y-1.5">
-              <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wide">Title</label>
-              <input v-model="editForm.title" type="text" class="w-full px-3.5 py-2.5 text-sm border rounded-lg bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all" :class="editErrors.title ? 'border-rose-300' : 'border-slate-200'" />
-              <p v-if="editErrors.title" class="text-xs text-rose-500">{{ editErrors.title }}</p>
-            </div>
-            <div class="space-y-1.5">
-              <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wide">Assigned To</label>
-              <input v-model="editForm.assignedTo" type="email" class="w-full px-3.5 py-2.5 text-sm border rounded-lg bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all" :class="editErrors.assignedTo ? 'border-rose-300' : 'border-slate-200'" />
-              <p v-if="editErrors.assignedTo" class="text-xs text-rose-500">{{ editErrors.assignedTo }}</p>
-            </div>
-            <div class="grid grid-cols-2 gap-4">
-              <div class="space-y-1.5">
-                <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wide">Status</label>
-                <select v-model="editForm.status" class="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all">
-                  <option value="open">Open</option>
-                  <option value="in-progress">In Progress</option>
-                  <option value="done">Done</option>
-                </select>
-              </div>
-              <div class="space-y-1.5">
-                <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wide">Priority</label>
-                <select v-model="editForm.priority" class="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all">
-                  <option value="low">Low</option>
-                  <option value="medium">Medium</option>
-                  <option value="high">High</option>
-                </select>
-              </div>
-            </div>
-            <div class="grid grid-cols-2 gap-4">
-              <div class="space-y-1.5">
-                <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wide">Start Date</label>
-                <input v-model="editForm.startDate" type="date" class="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all" />
-              </div>
-              <div class="space-y-1.5">
-                <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wide">End Date</label>
-                <input v-model="editForm.endDate" type="date" class="w-full px-3.5 py-2.5 text-sm border border-slate-200 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 transition-all" />
-              </div>
-            </div>
-          </div>
-          <div class="px-6 py-4 border-t border-slate-100 bg-slate-50/50 rounded-b-2xl flex items-center justify-end gap-3">
-            <button class="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors" @click="closeEdit">Cancel</button>
-            <button
-              class="flex items-center gap-2 px-5 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50"
-              :disabled="saving"
-              @click="saveEdit"
-            >
-              <svg v-if="saving" class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-              </svg>
-              {{ saving ? 'Saving…' : 'Save Changes' }}
-            </button>
-          </div>
-        </div>
-      </div>
-    </Transition>
-  </Teleport>
+
+       
+  <TaskEditModal v-if="editingTask" :task="editingTask" @updated="onTaskUpdated"  @close="closeEdit" />
+  
+
 
   <!-- Delete Confirm Modal -->
   <Teleport to="body">
@@ -224,12 +154,15 @@ import {
 } from '@tanstack/vue-table'
 import { RouterLink } from 'vue-router'
 import { useTaskStore } from '@/stores/taskStore'
+import { useProjectStore } from '@/stores/projectStore'
 import type { Task, TaskStatus, TaskPriority } from '@/types'
 import BadgeLabel from '@/components/ui/BadgeLabel.vue'
+import TaskEditModal from '@/components/TaskEditModal.vue'
 
 const props = defineProps<{ data: Task[] }>()
 
 const taskStore = useTaskStore()
+const projectStore = useProjectStore()
 
 // Table state
 const globalFilter = ref('')
@@ -237,32 +170,10 @@ const sorting = ref<SortingState>([])
 
 // Edit state
 const editingTask = ref<Task | null>(null)
-const saving = ref(false)
-const editForm = reactive({
-  title: '',
-  assignedTo: '',
-  status: 'open' as TaskStatus,
-  priority: 'medium' as TaskPriority,
-  startDate: '',
-  endDate: '',
-})
-const editErrors = reactive<{ title?: string; assignedTo?: string }>({})
-
 // Delete state
 const deletingTask = ref<Task | null>(null)
 const deleting = ref(false)
 
-// Date helpers
-function apiToInput(raw: string | null): string {
-  if (!raw || raw.length !== 8) return ''
-  return `${raw.slice(4)}-${raw.slice(2, 4)}-${raw.slice(0, 2)}`
-}
-
-function inputToApi(s: string): string {
-  if (!s) return ''
-  const [y, m, d] = s.split('-')
-  return `${d}${m}${y}`
-}
 
 function formatDateDisplay(raw: string | null): string {
   if (!raw) return '—'
@@ -273,42 +184,10 @@ function formatDateDisplay(raw: string | null): string {
 // Edit handlers
 function openEdit(task: Task) {
   editingTask.value = task
-  editForm.title = task.title
-  editForm.assignedTo = task.assignedTo?.email ?? ''
-  editForm.status = task.status
-  editForm.priority = task.priority
-  editForm.startDate = apiToInput(task.dueDate ?? null)
-  editForm.endDate = ''
-  delete editErrors.title
-  delete editErrors.assignedTo
 }
 
 function closeEdit() {
   editingTask.value = null
-  saving.value = false
-}
-
-function validateEdit(): boolean {
-  delete editErrors.title
-  delete editErrors.assignedTo
-  if (!editForm.title.trim()) editErrors.title = 'Title is required'
-  if (!editForm.assignedTo.trim()) editErrors.assignedTo = 'Email is required'
-  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editForm.assignedTo)) editErrors.assignedTo = 'Enter a valid email'
-  return !editErrors.title && !editErrors.assignedTo
-}
-
-async function saveEdit() {
-  if (!editingTask.value || !validateEdit()) return
-  saving.value = true
-  await taskStore.updateTask(editingTask.value.project, editingTask.value._id, {
-    title: editForm.title.trim(),
-    assignedTo: editForm.assignedTo.trim(),
-    status: editForm.status,
-    priority: editForm.priority,
-    dueDate: editForm.endDate ? inputToApi(editForm.endDate) : (editForm.startDate ? inputToApi(editForm.startDate) : null),
-  })
-  saving.value = false
-  closeEdit()
 }
 
 // Delete handlers
@@ -419,9 +298,10 @@ const columns: ColumnDef<Task>[] = [
     },
   },
 ]
+const tableData = computed(() => props.data)
 
 const table = useVueTable({
-  get data() { return props.data },
+  get data() { return tableData.value },
   columns,
   state: {
     get globalFilter() { return globalFilter.value },
@@ -436,7 +316,25 @@ const table = useVueTable({
   getPaginationRowModel: getPaginationRowModel(),
   getSortedRowModel: getSortedRowModel(),
   initialState: { pagination: { pageSize: 10 } },
+
+  
 })
+
+async function onTaskUpdated() {
+  // Refetch tasks from the store so props.data updates
+  const projectId = editingTask.value 
+    ? (typeof editingTask.value.project === 'object' 
+        ? (editingTask.value.project as any)._id 
+        : editingTask.value.project)
+    : null
+
+  if (projectId) {
+    await taskStore.fetchTasks(projectId) // ✅ this updates the store → parent re-renders → props.data changes
+  }
+
+  editingTask.value = null
+}
+
 
 const filteredCount = computed(() => table.getFilteredRowModel().rows.length)
 </script>

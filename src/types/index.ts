@@ -54,8 +54,17 @@ export interface CreateTaskPayload {
   assignedTo: string
   status: TaskStatus
   priority: TaskPriority
+  createdAt?: string | null
   dueDate?: string | null
   description?: string
+}
+
+export interface CreateProjectPayload {
+  name: string
+  description?: string
+  createdBy: string
+  members?: string[]
+  admins?: string[]
 }
 
 export interface ApiResponse<T> {
@@ -89,4 +98,12 @@ export interface AuthUser {
 export interface AuthResponse {
   token: string
   user: AuthUser
+}
+
+export interface User {
+  id: string
+  name: string
+  email: string
+  role: 'admin' | 'manager' | 'member'
+
 }

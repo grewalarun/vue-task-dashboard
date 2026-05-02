@@ -27,6 +27,15 @@ export const useTaskStore = defineStore('tasks', () => {
     return counts
   })
 
+  const tasksByUser = computed(() => {
+    const counts: Record<string, number> = {}
+    tasks.value.forEach((t) => {
+      const name = t.assignedTo?.name || 'Unassigned'
+      counts[name] = (counts[name] || 0) + 1
+    })
+    return Object.entries(counts).map(([name, count]) => ({ name, count }))
+  })
+
   const tasksByStatus = computed(() => {
     const counts = { todo: 0, 'in-progress': 0, done: 0 }
     tasks.value.forEach((t) => { counts[t.status] = (counts[t.status] || 0) + 1 })
@@ -40,8 +49,8 @@ export const useTaskStore = defineStore('tasks', () => {
   // ─── Actions ──────────────────────────────────────────────────────────────
 
   /** GET /projects/:projectId/tasks */
-  async function fetchTasks(projectId: string) {
-    tasksLoading.value = true
+  async function fetchTasks(projectId: string, silent = false) {
+    if (!silent) tasksLoading.value = true
     error.value = null
     try {
       const res = await taskService.getProjectTasks(projectId)
@@ -54,7 +63,7 @@ export const useTaskStore = defineStore('tasks', () => {
     } catch (err: any) {
       error.value = err.message
     } finally {
-      tasksLoading.value = false
+      if (!silent) tasksLoading.value = false
     }
   }
 
@@ -77,17 +86,17 @@ export const useTaskStore = defineStore('tasks', () => {
   }
 
   /** GET /projects/:projectId/tasks/:taskId */
-  async function fetchTask(projectId: string, taskId: string) {
-    taskLoading.value = true
+  async function fetchTask(projectId: string, taskId: string, silent = false) {
+    if (!silent) taskLoading.value = true
     error.value = null
     try {
       const res = await taskService.getById(projectId, taskId)
       const raw = res.data as any
       activeTask.value = raw?.task ?? raw?.data ?? raw
     } catch (err: any) {
-      error.value = err.message
+      if (!silent) error.value = err.message
     } finally {
-      taskLoading.value = false
+      if (!silent) taskLoading.value = false
     }
   }
 
@@ -162,34 +171,31 @@ export const useTaskStore = defineStore('tasks', () => {
     taskId: string,
     payload: Partial<CreateTaskPayload>
   ): Promise<boolean> {
-    error.value = null
     try {
-      const res = await taskService.update(projectId, taskId, payload)
-      const raw = res.data as any
-      const updated = raw?.task ?? raw?.data ?? raw
-      const idx = tasks.value.findIndex((t) => t._id === taskId)
-      if (idx !== -1) tasks.value[idx] = { ...tasks.value[idx], ...updated }
-      if (activeTask.value?._id === taskId) activeTask.value = { ...activeTask.value, ...updated }
+      await taskService.update(projectId, taskId, payload)
+      // Re-fetch to guarantee fully populated `assignedTo` and `createdBy` objects
+      await fetchTasks(projectId, true)
+      if (activeTask.value?._id === taskId) {
+        await fetchTask(projectId, taskId, true)
+      }
       return true
     } catch (err: any) {
-      error.value = err.message
+      console.error(err)
       return false
     }
   }
 
   /** PATCH /:taskId/status */
   async function updateTaskStatus(projectId: string, taskId: string, payload: { status: TaskStatus }): Promise<boolean> {
-    error.value = null
     try {
-      const res = await taskService.updateStatus(taskId, payload.status)
-      const raw = res.data as any
-      const updated = raw?.task ?? raw?.data ?? raw
-      const idx = tasks.value.findIndex((t) => t._id === taskId)
-      if (idx !== -1) tasks.value[idx] = { ...tasks.value[idx], ...updated }
-      if (activeTask.value?._id === taskId) activeTask.value = { ...activeTask.value!, status: payload.status }
+      await taskService.updateStatus(taskId, payload.status)
+      await fetchTasks(projectId, true)
+      if (activeTask.value?._id === taskId) {
+        activeTask.value = { ...activeTask.value!, status: payload.status }
+      }
       return true
     } catch (err: any) {
-      error.value = err.message
+      console.error(err)
       return false
     }
   }
@@ -211,6 +217,7 @@ export const useTaskStore = defineStore('tasks', () => {
     error,
     tasksByPriority,
     tasksByStatus,
+    tasksByUser,
     totalTasks,
     completedTasks,
     inProgressTasks,

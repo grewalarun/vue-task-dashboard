@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-[#f8fafc]">
+  <div class="min-h-screen bg-[#f4f4f4]">
     <!-- Auth layout: no sidebar/header -->
     <template v-if="!showAppShell">
       <RouterView />

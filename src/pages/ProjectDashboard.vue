@@ -1,6 +1,7 @@
 <template>
   <div class="space-y-6">
     <!-- Stat Cards Row -->
+    <h2 class="text-2xl font-bold text-slate-800 mb-4">Project dashboard</h2>
     <div class="grid grid-cols-2 gap-4">
         <div v-if="loading.loading" class="flex justify-center col-span-4"><Loader/></div>
 
@@ -26,20 +27,26 @@
             <h2 class="text-md font-semibold text-slate-800">Projects</h2>
             <p class="text-xs text-slate-400">Recent added projects</p>
           </div>
+          <router-link to="/projects" class="btn-link"> View All <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+            </svg></router-link>
         </div>
 <div class="grid grid-cols-4 gap-4">
 
         <template v-for="p in projects.projects">
-      <StatCard :label="p.name" :value="p.taskStat.total" sub="Tasks" icon-bg="bg-blue-50">
+      <StatCard :label="p.name" :value="p.taskStat.total" :path="`/projects/${p._id}`"  sub="Tasks" icon-bg="bg-blue-50">
         <template #icon>
           <svg class="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
             <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
           </svg>
         </template>
+        
        <template #footer>
-      <router-link :to="`/projects/${p._id}`" class="text-blue-600 hover:underline cursor-pointer" id="link-to-details">
-        Details
-      </router-link>
+        <progress :value="p.taskStat.done" :max="p.taskStat.total" class="mt-4 w-full appearance-none h-1 rounded-full overflow-hidden
+         [&::-webkit-progress-bar]:bg-gray-200 
+         [&::-webkit-progress-value]:bg-blue-600 
+         [&::-moz-progress-bar]:bg-blue-600" id="progress"></progress>
+        <p class="text-xs text-slate-400 mt-1">{{ p.taskStat.done }} / {{ p.taskStat.total }} tasks completed</p> 
       </template>
       </StatCard>
 
@@ -150,14 +157,6 @@ onErrorCaptured((err, instance, info) => {
   return false // Prevent error from propagating further
 })
 
-// 9. onRenderTracked (Dev only - tracks reactive dependencies)
-// onRenderTracked((event) => {
-//   if (import.meta.env.DEV) {
-//     console.log(`🎯 onRenderTracked: Tracking ${event.key} - ${event.target}`)
-//   }
-// })
-
-// 10. onRenderTriggered (Dev only - shows what triggered re-render)
 onRenderTriggered((event) => {
   if (import.meta.env.DEV) {
     console.log(`⚡ onRenderTriggered: ${event.key} triggered re-render`)

@@ -1,5 +1,5 @@
 import axios from 'axios'
-import type { Projects, CreateProjectPayload } from '@/types'
+import type { User, Task, CreateTaskPayload } from '@/types'
 
 const BASE_URL = 'https://task-management-virid-omega.vercel.app'
 
@@ -31,10 +31,10 @@ api.interceptors.response.use(
   }
 )
 
-export const projectService = {
-  getAll: () => api.get<Projects[]>('/projects'),
-  getById: (id: string) => api.get(`/projects/${id}`),
-  create: (payload: CreateProjectPayload) => api.post<Projects>('/projects', payload),
-  update: (id: string, payload: Partial<CreateProjectPayload>) => api.patch<Projects>(`/projects/${id}`, payload),
-  delete: (id: string) => api.delete(`/projects/${id}`),
+export const userService = {
+  getAll: () => api.get<User[]>('/users'),
+  // getById: (id: string) => api.get<Projects>(`/tasks/${id}`),
+  // create: (payload: CreateTaskPayload) => api.post<Projects>('/tasks', payload),
+  // update: (id: string, payload: Partial<CreateTaskPayload>) => api.put<Projects>(`/tasks/${id}`, payload),
+  // delete: (id: string) => api.delete(`/tasks/${id}`),
 }

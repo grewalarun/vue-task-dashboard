@@ -20,6 +20,18 @@
           Hello, <span class="font-medium text-slate-600">{{ firstName }}</span>
         </span>
 
+        <!-- Add Project CTA (Admin only) -->
+        <button
+          v-if="isAdmin"
+          @click="showProjectModal = true"
+          class="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors duration-150"
+        >
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
+          </svg>
+          Add Project
+        </button>
+
         <!-- New Task CTA -->
         <RouterLink
           to="/tasks/new"
@@ -32,18 +44,29 @@
         </RouterLink>
       </div>
     </div>
+
+    <!-- Modals -->
+    <ProjectCreateModal v-if="showProjectModal" @close="showProjectModal = false" />
   </header>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import { useTaskStore } from '@/stores/taskStore'
 import { useAuthStore } from '@/stores/authStore'
+import ProjectCreateModal from '@/components/ProjectCreateModal.vue'
 
 const route     = useRoute()
 const taskStore = useTaskStore()
 const authStore = useAuthStore()
+
+const showProjectModal = ref(false)
+
+const isAdmin = computed(() => {
+  const user = authStore.user || JSON.parse(localStorage.getItem('tf_user') || '{}')
+  return user?.role === 'admin'
+})
 
 const firstName = computed(() => {
   const name = authStore.user?.name ?? ''
