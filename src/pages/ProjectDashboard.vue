@@ -31,7 +31,7 @@
             <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
             </svg></router-link>
         </div>
-<div class="grid grid-cols-4 gap-4">
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4">
 
         <template v-for="p in projects.projects">
       <StatCard :label="p.name" :value="p.taskStat.total" :path="`/projects/${p._id}`"  sub="Tasks" icon-bg="bg-blue-50">

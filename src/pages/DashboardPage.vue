@@ -17,7 +17,7 @@
       <Loader />
     </div>
 
-    <div v-else class="grid grid-cols-4 gap-4">
+    <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       <StatCard label="Total Tasks" :value="totalTasks" sub="My tasks" icon-bg="bg-blue-50">
         <template #icon>
           <svg class="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
