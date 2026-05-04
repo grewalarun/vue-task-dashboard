@@ -1,5 +1,5 @@
 <template>
-  <div class="max-w-6xl mx-auto">
+  <div class="max-w-7xl mx-auto">
 
     <!-- Breadcrumb -->
     <nav class="flex items-center gap-1.5 text-xs text-slate-400 mb-5 flex-wrap">
@@ -325,14 +325,14 @@ const projectMembers = computed(() => projectStore.projects.find(p => p._id === 
 const resolvedAssignedTo = computed(() => {
   const id = task.value?.assignedTo as any
   if (!id) return null
-  if (typeof id === 'string') return userStore.users.find(u => u.id === id) || { name: 'Unknown User', email: '' }
+  if (typeof id === 'string') return userStore.members.find(u => u._id === id) || { name: 'Unknown User', email: '' }
   return id
 })
 
 const resolvedCreatedBy = computed(() => {
   const id = task.value?.createdBy as any
   if (!id) return null
-  if (typeof id === 'string') return userStore.users.find(u => u.id === id) || { name: 'Unknown User', email: '' }
+  if (typeof id === 'string') return userStore.members.find(u => u._id === id) || { name: 'Unknown User', email: '' }
   return id
 })
 

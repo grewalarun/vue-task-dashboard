@@ -1,17 +1,19 @@
 <template>
-  <div class="min-h-screen bg-[#f4f4f4]">
-    <!-- Auth layout: no sidebar/header -->
+  <div class="min-h-screen bg-[#f8fafc]">
+    <!-- Auth layout — no shell -->
     <template v-if="!showAppShell">
       <RouterView />
     </template>
 
-    <!-- App shell layout: sidebar + header -->
+    <!-- App shell layout -->
     <template v-else>
-      <AppSidebar />
-      <div class="ml-64 min-h-screen">
-        <AppHeader />
-        <main class="p-6">
-         
+      <AppSidebar :mobile-open="sidebarOpen" @close="sidebarOpen = false" />
+
+      <!-- Main area — pushed right on lg+ -->
+      <div class="lg:ml-64 min-h-screen flex flex-col">
+        <AppHeader @toggle-sidebar="sidebarOpen = !sidebarOpen" />
+        <main class="flex-1 p-4 sm:p-6">
+          
             <RouterView :key="$route.path" />
           
         </main>
@@ -21,16 +23,20 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { RouterView, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/authStore'
 import AppSidebar from '@/components/layout/AppSidebar.vue'
-import AppHeader from '@/components/layout/AppHeader.vue'
+import AppHeader  from '@/components/layout/AppHeader.vue'
 
-const route = useRoute()
+const route     = useRoute()
 const authStore = useAuthStore()
 
-// Show the dashboard shell only when authenticated AND not on a public-only route
+const sidebarOpen = ref(false)
+
+// Close mobile sidebar on route change
+watch(() => route.path, () => { sidebarOpen.value = false })
+
 const showAppShell = computed(
   () => authStore.isAuthenticated && !route.meta.public
 )

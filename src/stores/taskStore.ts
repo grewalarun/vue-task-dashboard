@@ -181,6 +181,7 @@ export const useTaskStore = defineStore('tasks', () => {
       return true
     } catch (err: any) {
       console.error(err)
+      error.value = err.message
       return false
     }
   }

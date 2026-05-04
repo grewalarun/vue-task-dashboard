@@ -194,7 +194,7 @@ async function saveEdit() {
   if (ok) {
     close()
   } else {
-    editError.value = taskStore.error || 'Failed to update task'
+    editError.value = taskStore.error || `Failed to update task ${taskStore.error}`
   }
 }
 </script>

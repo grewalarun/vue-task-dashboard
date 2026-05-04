@@ -77,6 +77,24 @@ export interface PaginationState {
   pageSize: number
 }
 
+
+
+// ─── Members ──────────────────────────────────────────────────────────────
+
+export type MemberRole = 'admin' | 'manager' | 'member'
+
+export interface Member {
+  _id: string
+  name: string
+  email: string
+  role: MemberRole
+}
+
+export interface UpdateRolePayload {
+  role: MemberRole
+}
+
+
 // ─── Auth ──────────────────────────────────────────────────────────────────
 export interface LoginPayload {
   email: string

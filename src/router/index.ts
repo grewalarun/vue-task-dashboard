@@ -6,6 +6,8 @@ import AddTaskPage from '@/pages/AddTaskPage.vue'
 import TasksTablePage from '@/pages/TasksTablePage.vue'
 import ProjectDashboard from '@/pages/ProjectDashboard.vue'
 import TaskDetailPage from '@/pages/TaskDetailPage.vue'
+import MembersPage from '@/pages/MembersPage.vue'
+import SettingsPage from '@/pages/SettingsPage.vue'
 
 const routes = [
   {
@@ -43,6 +45,19 @@ const routes = [
     name: 'add-task',
     component: AddTaskPage,
     meta: { title: 'Add Task', requiresAuth: true },
+  },
+  {
+    path: '/members',
+    name: 'members',
+    component: MembersPage,
+    meta: { title: 'Members', requiresAuth: true },
+  },
+
+  {
+    path: '/settings',
+    name: 'settings',
+    component: SettingsPage,
+    meta: { title: 'Settings', requiresAuth: true },
   },
   // Catch-all → redirect to dashboard or auth
   {
