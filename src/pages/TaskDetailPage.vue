@@ -83,7 +83,7 @@
           <!-- Description card -->
           <div class="bg-white rounded-xl border border-slate-200 p-6">
             <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Description</h2>
-            <p v-if="task.description" class="text-sm text-slate-700 leading-relaxed">{{ task.description }}</p>
+            <p v-if="task.description" class="text-sm text-slate-700 leading-relaxed" v-html=" task.description "></p>
             <p v-else class="text-sm text-slate-400 italic">No description provided.</p>
           </div>
 
